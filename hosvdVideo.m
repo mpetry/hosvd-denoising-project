@@ -1,36 +1,36 @@
 clc
 
-%reading and converting video
-v = VideoReader('CMR_infarct_cine.mp4');
+% reading and converting video
+% v = VideoReader('CMR_infarct_cine.mp4');
 
-%get details
-nFrames = v.NumberOfFrames;
-vidHeight = v.Height;
-vidWidth = v.Width;
+% get details
+% nFrames = v.NumberOfFrames;
+% vidHeight = v.Height;
+% vidWidth = v.Width;
 
-%define colormap
-map = [(0:255)' (0:255)' (0:255)']/255;
+% define colormap
+% map = [(0:255)' (0:255)' (0:255)']/255;
 
-%preallocate movie structure.
-mov(1:nFrames) = struct('cdata', zeros(vidHeight, vidWidth, 'uint8'),'colormap', map);
+% preallocate movie structure.
+% mov(1:nFrames) = struct('cdata', zeros(vidHeight, vidWidth, 'uint8'),'colormap', map);
 
-%read one frame at a time.
-for k = 1 : nFrames
-      mov(k).cdata = rgb2gray(read(v, k));
-end
+% read one frame at a time.
+% for k = 1 : nFrames
+%      mov(k).cdata = rgb2gray(read(v, k));
+% end
 
 %preallocate matrix
-frames = zeros(vidWidth,vidHeight,nFrames, 'uint8');
+% frames = zeros(vidWidth,vidHeight,nFrames, 'uint8');
 
 %populate frames matrix
-for i=1:nFrames
+% for i=1:nFrames
     frames(:,:,i) = mov(i).cdata;
 end    
 
 %add noise%
-noisy = zeros(200,200,9);
+noisy = zeros(vidHeight, vidWidth, nFrames);
 for i=1:nFrames
-    noisy(:,:,i) = imnoise(frames(:,:,i), 'gaussian');
+    noisy(:,:,i) = imnoise(frames(:,:,i), 'gaussian', 0, 0.01*i);
     imshow(frames(:,:,i))
 end
 
@@ -49,7 +49,7 @@ dispPSNR = [];
 dispnoisyPSNR = [];
 
 % try different levels of compression
-for N=(5:25:vidHeight) 
+for N=(5:10:vidHeight) 
     % store the singular values in a temporary var
     C = S;
     
@@ -78,17 +78,12 @@ for N=(5:25:vidHeight)
         set(h, 'ButtonDownFcn',{@callback,i})
     end
     
-    %Dcopy = permute(D, [1 2 4 3]); % 4D matrix
-    %Dcopy = uint8(Dcopy);
-    %movie = immovie(Dcopy, colormap(gray)); % map is the colormap you want to use
-    %implay(movie);
-    
     % calculate MSE and PSNR
     MSError= sqrt(mean(mean(mean((frames-D).^2))));
     norm = sqrt(mean(mean(mean((frames).^2))));
-    PSNR = -10*log10((MSError)/(norm));
+    PSNR = -10*log10((MSError)/(255*255));
     noisyError = sqrt(mean(mean(mean((frames-noisy).^2))));
-    noisyPSNR = -10*log10((noisyError)/(norm));
+    noisyPSNR = -10*log10((noisyError)/(255*255));
     
     % store vals for display
     dispMSE = [dispMSE; MSError];
